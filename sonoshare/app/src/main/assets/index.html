@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+	<head></head>
+	<body>
+		<p>Hello!</p>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script type="text/javascript" src="https://connect.soundcloud.com/sdk-2.0.0.js"></script>
+        <script type="text/javascript">
+            var url = "https://api.soundcloud.com/tracks.json?client_id=3f7407c6252e6932c8ef6ea85c55e9c7";
+            $(document).ready(function() {
+                SC.initialize({
+                    client_id: "3f7407c6252e6932c8ef6ea85c55e9c7"
+                });
+                SC.get("/tracks", {q: "Ed Sheeran"}, function(tracks) {
+                    console.log(tracks);
+                });
+                
+            });
+            function showPrint(str) {
+                Android.showPrint(str);
+            }
+        </script>
+	</body>
+</html>
