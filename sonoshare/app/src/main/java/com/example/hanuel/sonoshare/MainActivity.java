@@ -3,9 +3,12 @@ package com.example.hanuel.sonoshare;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -14,6 +17,10 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.EditText;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -38,6 +45,7 @@ public class MainActivity extends ActionBarActivity {
 
         webView = (WebView)findViewById(R.id.webView);
         searchBar = (EditText)findViewById(R.id.searchBar);
+        searchBar.setInputType(InputType.TYPE_CLASS_TEXT);
 
         WebSettings webViewSettings = webView.getSettings();
         webViewSettings.setJavaScriptEnabled(true);
@@ -135,23 +143,75 @@ public class MainActivity extends ActionBarActivity {
             // Later for streaming
         }
     }
-    public class JSONAsyncTask extends AsyncTask<String, Void, Void> {
+    public class JSONAsyncTask extends AsyncTask<Void, Void, String> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
             keyword = searchBar.getText().toString();
-            jsonURL = "http://api.soundcloud.com/tracks?title=" +
+            jsonURL = "http://api.soundcloud.com/tracks?q=" +
                     keyword.replaceAll(" ", "%20") + "&client_id=" + CLIENT_ID + "&format=json";
             Log.i("MainActivity:JsonURL", jsonURL);
         }
         @Override
-        protected Void doInBackground(String... params) {
+        protected String doInBackground(Void... params) {
             jsonData = getJson(jsonURL);
+            JSONArray jsonArray = null;
+            keyword = keyword.toLowerCase();
+            String[] keywordSplited = keyword.split("\\s+");
+            try {
+                jsonArray = new JSONArray(jsonData);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            for (int i = 0; i < jsonArray.length(); i++) {
+                try {
+                    JSONObject jsonObject = jsonArray.getJSONObject(i);
+                    String trackTitle = jsonObject.getString("title").toLowerCase();
+                    if (trackTitle.contains("cover") || trackTitle.contains("parody")) {
+                        continue;
+                    }
+                    Log.i("Originial track title:", trackTitle);
+                    for (int j = 0; j < keywordSplited.length; j++) {
+                        trackTitle = trackTitle.replaceAll(keywordSplited[j], "");
+                    }
+                    Log.i("true length:", trackTitle.length() + "");
+                    if (trackTitle.replaceAll("\\s+", "").length() <= 5) {
+                        return jsonObject.getString("stream_url");
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+            }
             return null;
         }
         @Override
-        protected void onPostExecute(Void param) {
-            Log.i("MainActivity:JSONData", jsonData);
+        protected void onPostExecute(String streamId) {
+            if (streamId == null) {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("Search and Add Failed")
+                        .setMessage("Please search and add with another keyword. Track does not exist on SoundCloud!")
+                        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int width) {
+                                //Do nothing
+                            }
+                        }).setIcon(android.R.drawable.ic_dialog_alert).show();
+            }
+            else {
+                String streamURL = streamId + "?client_id=" + CLIENT_ID;
+                //Log.i("MainActivity:streamID", streamId + "?client_id=" + CLIENT_ID);
+                //webView.loadUrl(streamId + "?client_id=" + CLIENT_ID);
+                MediaPlayer mediaPlayer = new MediaPlayer();
+                mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+                try {
+                    mediaPlayer.setDataSource(streamURL);
+                    mediaPlayer.prepare();
+                    mediaPlayer.start();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
         }
     }
 }

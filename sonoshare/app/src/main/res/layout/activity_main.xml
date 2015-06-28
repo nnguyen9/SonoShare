@@ -18,7 +18,7 @@
             android:layout_weight="1"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:text="Search"
+            android:text="Search and Add"
             android:id="@+id/searchButton"
             android:onClick="search"/>
 
@@ -27,5 +27,6 @@
         android:id="@+id/webView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/searchLayout"></WebView>
+        android:layout_below="@+id/searchLayout"
+        android:visibility="gone"></WebView>
 </RelativeLayout>
